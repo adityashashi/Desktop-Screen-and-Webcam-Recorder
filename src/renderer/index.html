@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Screen & Webcam Recorder</title>
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+    <main class="app">
+        <header class="header">
+            <div>
+                <h1>Screen & Webcam Recorder</h1>
+                <p class="subtle">Select a screen/window, optionally enable webcam, then record.</p>
+            </div>
+            <div class="timer-wrap">
+                <span id="timer" class="timer">00:00:00</span>
+            </div>
+        </header>
+
+        <section class="panel controls">
+            <div class="field-group">
+                <label for="sessionName">Session Name</label>
+                <input id="sessionName" type="text" maxlength="80" placeholder="Sprint Demo" />
+            </div>
+            <div class="field-group small-field">
+                <label for="bitrateSelect">Bitrate</label>
+                <select id="bitrateSelect">
+                    <option value="1200000">Low (1.2 Mbps)</option>
+                    <option value="2500000" selected>Medium (2.5 Mbps)</option>
+                    <option value="4000000">High (4.0 Mbps)</option>
+                </select>
+            </div>
+            <div class="field-group save-field">
+                <label>Save Location</label>
+                <div class="save-row">
+                    <button id="chooseSaveDirBtn" class="secondary" type="button">Choose Folder</button>
+                    <span id="saveDirLabel" class="save-dir-label">videos/ (default)</span>
+                </div>
+            </div>
+            <div class="toggle-row">
+                <input id="webcamToggle" type="checkbox" />
+                <label for="webcamToggle">Record webcam</label>
+            </div>
+            <div class="actions">
+                <button id="refreshBtn" class="secondary">Refresh Sources</button>
+                <button id="startBtn">Start Recording</button>
+                <button id="stopBtn" class="danger" disabled>Stop Recording</button>
+                <button id="stopWebcamBtn" class="secondary" disabled>Stop Webcam Only</button>
+            </div>
+        </section>
+
+        <section class="layout">
+            <section class="panel">
+                <h2>Available Screens/Windows</h2>
+                <div id="sourceGrid" class="source-grid"></div>
+            </section>
+
+            <section class="panel preview-panel">
+                <h2>Live Preview</h2>
+                <div class="preview-grid">
+                    <div>
+                        <h3>Screen</h3>
+                        <video id="screenPreview" autoplay muted playsinline></video>
+                    </div>
+                    <div>
+                        <h3>Webcam</h3>
+                        <video id="webcamPreview" autoplay muted playsinline></video>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <section id="completeCard" class="panel complete hidden">
+            <h2>Recording Complete</h2>
+            <p id="completeText" class="subtle">Your recording files were saved.</p>
+            <div class="actions">
+                <button id="openFolderBtn">Open Recording Folder</button>
+                <button id="renameSessionBtn" class="secondary">Rename Session</button>
+            </div>
+        </section>
+
+        <section class="panel status-panel">
+            <p id="status" class="status">Ready.</p>
+        </section>
+    </main>
+
+    <script type="module" src="./renderer.ts"></script>
+</body>
+
+</html>
