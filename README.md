@@ -20,6 +20,7 @@ A desktop app that lets users:
 - Recording complete panel with "Open Recording Folder"
 - Live timer and max-duration guard (2 hours)
 - Export settings: bitrate selection and custom save location chooser
+- "Create final.mp4" action using ffmpeg (webcam overlaid on screen)
 - Secure IPC bridge and atomic file writes
 
 ## Tech Stack
@@ -77,6 +78,7 @@ videos/
 - Codec/container output is currently WebM.
 - In some environments, desktop capture permissions may require OS-level approval.
 - If the app is force-terminated by the OS/process manager, final save flush may still be interrupted.
+- `final.mp4` generation requires bundled ffmpeg binary support for your platform (`ffmpeg-static`).
 
 ## Main Scripts
 

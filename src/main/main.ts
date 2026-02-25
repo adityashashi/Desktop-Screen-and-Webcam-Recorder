@@ -1,6 +1,7 @@
 import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, shell } from "electron";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { spawn } from "node:child_process";
 import { v4 as uuidv4 } from "uuid";
 
 type CreateSessionInput = { name?: string };
@@ -8,6 +9,7 @@ type SaveFileInput = { sessionId: string; fileName: "screen.webm" | "webcam.webm
 type OpenFolderInput = { sessionId: string };
 type RenameSessionInput = { sessionId: string; name: string };
 type SetVideosRootInput = { directoryPath: string };
+type MergeSessionInput = { sessionId: string };
 
 type SessionInfo = {
     id: string;
@@ -18,6 +20,7 @@ type SessionInfo = {
 const SESSION_ID_PATTERN = /^[a-f0-9-]{36}$/i;
 const SAFE_NAME_PATTERN = /^[a-zA-Z0-9 _-]{1,80}$/;
 const ALLOWED_FILE_NAMES = new Set(["screen.webm", "webcam.webm"]);
+const ffmpegPath = require("ffmpeg-static") as string | null;
 
 let mainWindow: BrowserWindow | null = null;
 let isForceClosing = false;
@@ -68,6 +71,99 @@ async function writeFileAtomic(targetPath: string, content: Buffer) {
 
 async function ensureVideosRoot() {
     await fs.mkdir(getVideosRoot(), { recursive: true });
+}
+
+async function fileExists(filePath: string) {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function runFfmpeg(args: string[]) {
+    return new Promise<void>((resolve, reject) => {
+        if (!ffmpegPath) {
+            reject(new Error("ffmpeg binary is unavailable on this platform."));
+            return;
+        }
+
+        const processHandle = spawn(ffmpegPath, args, {
+            windowsHide: true,
+            stdio: ["ignore", "pipe", "pipe"],
+        });
+
+        let stderr = "";
+        processHandle.stderr.on("data", (chunk: Buffer) => {
+            stderr += chunk.toString();
+        });
+
+        processHandle.on("error", (error) => {
+            reject(error);
+        });
+
+        processHandle.on("close", (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(stderr || `ffmpeg exited with code ${String(code)}`));
+        });
+    });
+}
+
+async function mergeSessionToFinalMp4(sessionId: string) {
+    const sessionPath = getSessionPath(sessionId);
+    const screenPath = path.join(sessionPath, "screen.webm");
+    const webcamPath = path.join(sessionPath, "webcam.webm");
+    const outputPath = path.join(sessionPath, "final.mp4");
+
+    const hasScreen = await fileExists(screenPath);
+    if (!hasScreen) {
+        throw new Error("screen.webm not found for this session.");
+    }
+
+    const hasWebcam = await fileExists(webcamPath);
+
+    const baseArgs = ["-y", "-i", screenPath];
+    const args = hasWebcam
+        ? [
+            ...baseArgs,
+            "-i",
+            webcamPath,
+            "-filter_complex",
+            "[1:v]scale=iw*0.25:-1[cam];[0:v][cam]overlay=W-w-24:H-h-24",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            "-shortest",
+            outputPath,
+        ]
+        : [
+            ...baseArgs,
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            outputPath,
+        ];
+
+    await runFfmpeg(args);
+    return outputPath;
 }
 
 function createWindow() {
@@ -253,4 +349,13 @@ ipcMain.handle("session:open-folder", async (_event, payload: OpenFolderInput) =
     }
 
     return { success: true };
+});
+
+ipcMain.handle("session:merge-final-mp4", async (_event, payload: MergeSessionInput) => {
+    if (!payload?.sessionId) {
+        throw new Error("Session id is required.");
+    }
+
+    const outputPath = await mergeSessionToFinalMp4(payload.sessionId);
+    return { success: true, path: outputPath };
 });

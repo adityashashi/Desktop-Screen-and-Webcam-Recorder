@@ -23,6 +23,7 @@ declare global {
             renameSession: (sessionId: string, name: string) => Promise<{ success: true }>;
             saveRecordingFile: (sessionId: string, fileName: "screen.webm" | "webcam.webm", data: ArrayBuffer) => Promise<{ success: true; path: string }>;
             openSessionFolder: (sessionId: string) => Promise<{ success: true }>;
+            mergeFinalMp4: (sessionId: string) => Promise<{ success: true; path: string }>;
             onBeforeClose: (callback: () => void) => () => void;
             acknowledgeBeforeCloseHandled: () => void;
         };

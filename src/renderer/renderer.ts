@@ -37,6 +37,7 @@ const webcamPreview = requireElement<HTMLVideoElement>("#webcamPreview");
 const completeCard = requireElement<HTMLElement>("#completeCard");
 const completeText = requireElement<HTMLParagraphElement>("#completeText");
 const openFolderBtn = requireElement<HTMLButtonElement>("#openFolderBtn");
+const mergeMp4Btn = requireElement<HTMLButtonElement>("#mergeMp4Btn");
 const renameSessionBtn = requireElement<HTMLButtonElement>("#renameSessionBtn");
 
 let selectedSourceId: string | null = null;
@@ -61,6 +62,7 @@ let currentMimeType = "video/webm";
 let selectedBitrate = 2_500_000;
 let selectedSaveDir: string | null = null;
 let isAppClosing = false;
+let isMerging = false;
 
 function setStatus(message: string, isError = false) {
     statusEl.textContent = message;
@@ -250,6 +252,7 @@ function setButtons() {
     chooseSaveDirBtn.disabled = busy;
     stopBtn.disabled = !isRecording || isStopping;
     stopWebcamBtn.disabled = !isRecording || !webcamRecorder || webcamRecorder.state === "inactive";
+    mergeMp4Btn.disabled = busy || isMerging || !session;
 }
 
 async function startRecording() {
@@ -479,6 +482,29 @@ openFolderBtn.addEventListener("click", () => {
     void window.recorderApi.openSessionFolder(session.sessionId).catch((error) => {
         setStatus(`Unable to open folder: ${toError(error)}`, true);
     });
+});
+
+mergeMp4Btn.addEventListener("click", () => {
+    if (!session || isMerging) {
+        return;
+    }
+
+    isMerging = true;
+    mergeMp4Btn.textContent = "Merging...";
+    setButtons();
+
+    void window.recorderApi.mergeFinalMp4(session.sessionId)
+        .then((result) => {
+            setStatus(`Created final.mp4 at: ${result.path}`);
+        })
+        .catch((error) => {
+            setStatus(`Unable to create final.mp4: ${toError(error)}. Ensure recording files exist.`, true);
+        })
+        .finally(() => {
+            isMerging = false;
+            mergeMp4Btn.textContent = "Create final.mp4";
+            setButtons();
+        });
 });
 
 renameSessionBtn.addEventListener("click", () => {

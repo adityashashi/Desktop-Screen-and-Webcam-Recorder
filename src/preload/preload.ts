@@ -22,6 +22,7 @@ const api = {
     saveRecordingFile: (sessionId: string, fileName: "screen.webm" | "webcam.webm", data: ArrayBuffer) =>
         ipcRenderer.invoke("recording:save-file", { sessionId, fileName, data }) as Promise<{ success: true; path: string }>,
     openSessionFolder: (sessionId: string) => ipcRenderer.invoke("session:open-folder", { sessionId }) as Promise<{ success: true }>,
+    mergeFinalMp4: (sessionId: string) => ipcRenderer.invoke("session:merge-final-mp4", { sessionId }) as Promise<{ success: true; path: string }>,
     onBeforeClose: (callback: () => void) => {
         const handler = () => callback();
         ipcRenderer.on("app:before-close", handler);
