@@ -23,6 +23,10 @@ A desktop app that lets users:
 - "Create final.mp4" action using ffmpeg (webcam overlaid on screen)
 - Secure IPC bridge and atomic file writes
 
+## Walkthrough Video
+
+- Project walkthrough: https://drive.google.com/file/d/1_ARt4zaMJnQxI1604N8sEo6_a_esAYiV/view?usp=sharing
+
 ## Tech Stack
 
 - Electron
